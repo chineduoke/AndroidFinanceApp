@@ -120,7 +120,8 @@ fun FinanceApp(){
                 onViewIncomeClick = { navController.navigate("monthlyIncome") },
                 onViewExpenseClick = { navController.navigate("monthlyExpense") },
                 onSignOutClick = { navController.navigate("landing") },
-                onAddExpenseClick = { navController.navigate("addExpense?key={key}") }
+                onAddExpenseClick = { navController.navigate("addExpense?key={key}") },
+                onAddIncomeClick = { navController.navigate("addIncome?key={key}") }
             )
         }
 
@@ -506,7 +507,8 @@ fun HomeScreen(
     onViewIncomeClick: () -> Unit,
     onViewExpenseClick: () -> Unit,
     onSignOutClick: () -> Unit, // New parameter for sign out action
-    onAddExpenseClick: () -> Unit
+    onAddExpenseClick: () -> Unit,
+    onAddIncomeClick: () -> Unit
 ) {
     val financeGoals = viewModel.financeGoals
     val savingsGoal = viewModel.savingsGoal
@@ -604,6 +606,14 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        Button(
+            onClick = onAddIncomeClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary)
+        ) {
+            Text("Add Income")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = onViewExpenseClick,
             modifier = Modifier.fillMaxWidth(),
@@ -939,125 +949,141 @@ fun MonthlyIncomePage(viewModel: FinanceViewModel, navController: NavController)
         TextButton(
             onClick = { navController.popBackStack() },
         ) {
-            Text("back")
-        }
-        Text("Income", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = {
-                    coroutineScope.launch {
-                        if (pagerState.currentPage > 0) {
-                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                        }
-                    }
-                }
-            ) {
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous Month")
-            }
-
-            Text(
-                text = months[pagerState.currentPage].format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
-            )
-
-            IconButton(
-                onClick = {
-                    coroutineScope.launch {
-                        if (pagerState.currentPage < months.size - 1) {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                        }
-                    }
-                }
-            ) {
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next Month")
-            }
+            Text("Back")
         }
 
+        Text(
+            "Income",
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
-        HorizontalPager(
-            state = pagerState,
-            count = months.size
-        ) { pageIndex ->
-            val month = months[pageIndex]
-            val incomesGroupedByDate = incomeEntries[month]?.groupBy { it.getLocalDate() } ?: emptyMap()
-
-            Column(
+        if (months.isNotEmpty()) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                IconButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            if (pagerState.currentPage > 0) {
+                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous Month")
+                }
 
-                LazyColumn(
+                Text(
+                    text = months[pagerState.currentPage].format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center
+                )
+
+                IconButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            if (pagerState.currentPage < months.size - 1) {
+                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next Month")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalPager(
+                state = pagerState,
+                count = months.size
+            ) { pageIndex ->
+                val month = months[pageIndex]
+                val incomesGroupedByDate = incomeEntries[month]?.groupBy { it.getLocalDate() } ?: emptyMap()
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    incomesGroupedByDate.keys.sorted().forEach { date ->
-                        item {
-                            Text(
-                                text = date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            incomesGroupedByDate[date]?.forEach { income ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "${income.type}: ${income.amount} CAD",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = income.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-
-                                    Row {
-                                        IconButton(onClick = {
-                                            navController.navigate("addIncome?key=${income.key}")
-                                        }) {
-                                            Icon(Icons.Default.Edit, contentDescription = "Edit")
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        IconButton(onClick = {
-                                            income.key?.let { key -> viewModel.deleteIncome(key) }
-                                        }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                                        }
-                                    }
-                                }
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        incomesGroupedByDate.keys.sorted().forEach { date ->
+                            item {
+                                Text(
+                                    text = date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
 
                                 Spacer(modifier = Modifier.height(8.dp))
-                            }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                                incomesGroupedByDate[date]?.forEach { income ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "${income.type}: ${income.amount} CAD",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = income.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        Row {
+                                            IconButton(onClick = {
+                                                navController.navigate("addIncome?key=${income.key}")
+                                            }) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                            }
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            IconButton(onClick = {
+                                                income.key?.let { key -> viewModel.deleteIncome(key) }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
                         }
                     }
                 }
             }
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No income entries available.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1071,6 +1097,7 @@ fun MonthlyIncomePage(viewModel: FinanceViewModel, navController: NavController)
         }
     }
 }
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
